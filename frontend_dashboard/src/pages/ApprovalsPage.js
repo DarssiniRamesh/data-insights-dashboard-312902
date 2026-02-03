@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { submissionsApi } from "../api/endpoints";
 import { ErrorBanner } from "../components/ErrorBanner";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 // PUBLIC_INTERFACE
 export function ApprovalsPage() {
@@ -11,7 +11,8 @@ export function ApprovalsPage() {
    * Terminology: 'data asset' (formerly 'submission')
    * Enforces Segregation of Duties (SoD): approver cannot be submitter.
    */
-  const { currentUser } = useAuth();
+  const { profile } = useAuth();
+  const currentUser = profile;
   const [submissionId, setSubmissionId] = useState("");
   const [decision, setDecision] = useState("publish");
   const [rationale, setRationale] = useState("");

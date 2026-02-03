@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { submissionsApi, validationApi } from "../api/endpoints";
 import { ErrorBanner } from "../components/ErrorBanner";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 // PUBLIC_INTERFACE
 export function ValidationPage() {
@@ -10,7 +10,8 @@ export function ValidationPage() {
    * 
    * Terminology: 'data asset' (formerly 'submission')
    */
-  const { currentUser } = useAuth();
+  const { profile } = useAuth();
+  const currentUser = profile;
   const [submissionId, setSubmissionId] = useState("");
   const [validationProfile, setValidationProfile] = useState("baseline");
 
