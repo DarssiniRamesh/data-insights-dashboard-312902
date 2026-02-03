@@ -22,19 +22,79 @@ export const healthApi = {
 };
 
 // PUBLIC_INTERFACE
+export const dataAssetsApi = {
+  /**
+   * Create data asset with standardized metadata.
+   * Contract: POST /api/v1/data-assets expects: draft_id, metadata {title, description, owner}, audit_context
+   */
+  create: (draftId, metadata, currentUser) =>
+    apiRequest("/api/v1/data-assets", {
+      method: "POST",
+      json: {
+        draft_id: draftId,
+        metadata: {
+          title: metadata.title,
+          description: metadata.description || null,
+          owner: metadata.owner,
+        },
+        audit_context: buildAuditContext(currentUser),
+      },
+    }),
+
+  /** Get a data asset via /api/v1/data-assets/{data_asset_id}. */
+  get: (dataAssetId) =>
+    apiRequest(`/api/v1/data-assets/${encodeURIComponent(dataAssetId)}`, { method: "GET" }),
+
+  /**
+   * Trigger validation run via /api/v1/data-assets/{id}/validate.
+   * Requires audit_context.
+   */
+  triggerValidation: (dataAssetId, { validation_profile }, currentUser) =>
+    apiRequest(`/api/v1/data-assets/${encodeURIComponent(dataAssetId)}/validate`, {
+      method: "POST",
+      json: {
+        validation_profile: validation_profile || "baseline",
+        audit_context: buildAuditContext(currentUser),
+      },
+    }),
+
+  /**
+   * Approve or reject data asset via /api/v1/data-assets/{id}/approve.
+   * Requires audit_context; supports password for e-sign reauth.
+   */
+  approve: (
+    dataAssetId,
+    { decision, rationale, password, signature_reason },
+    currentUser
+  ) =>
+    apiRequest(`/api/v1/data-assets/${encodeURIComponent(dataAssetId)}/approve`, {
+      method: "POST",
+      json: {
+        decision,
+        rationale: rationale || null,
+        password: password || null,
+        audit_context: buildAuditContext(currentUser),
+        signature: buildSignatureBlock(currentUser, signature_reason || "Approval action"),
+      },
+    }),
+};
+
+// PUBLIC_INTERFACE
 export const submissionsApi = {
   /**
-   * Create submission via compatibility endpoint.
+   * Create submission via compatibility endpoint (DEPRECATED).
    * Contract: POST /submissions expects simplified payload: name, version, description, artifacts, metadata.
+   * 
+   * Note: This endpoint is deprecated. Use dataAssetsApi.create() instead for new code.
    */
   createCompat: (payload) => apiRequest("/submissions", { method: "POST", json: payload }),
 
-  /** Get a submission via /api/v1/submissions/{submission_id}. */
+  /** Get a submission via /api/v1/submissions/{submission_id} (DEPRECATED). */
   get: (submissionId) =>
     apiRequest(`/api/v1/submissions/${encodeURIComponent(submissionId)}`, { method: "GET" }),
 
   /**
-   * Trigger validation run via /api/v1/submissions/{id}/validate.
+   * Trigger validation run via /api/v1/submissions/{id}/validate (DEPRECATED).
    * Requires audit_context.
    */
   triggerValidation: (submissionId, { validation_profile }, currentUser) =>
@@ -47,7 +107,7 @@ export const submissionsApi = {
     }),
 
   /**
-   * Run quality gates via compatibility endpoint.
+   * Run quality gates via compatibility endpoint (DEPRECATED).
    * POST /submissions/{id}/quality-gates/run
    */
   runQualityGatesCompat: (submissionId) =>
@@ -56,7 +116,7 @@ export const submissionsApi = {
     }),
 
   /**
-   * Approve or reject submission via /api/v1/submissions/{id}/approve.
+   * Approve or reject submission via /api/v1/submissions/{id}/approve (DEPRECATED).
    * Requires audit_context; supports password for e-sign reauth.
    */
   approve: (
@@ -76,13 +136,13 @@ export const submissionsApi = {
     }),
 
   /**
-   * Compatibility approval endpoint (simplified). Useful when backend is in compat-test mode.
+   * Compatibility approval endpoint (simplified) (DEPRECATED). Useful when backend is in compat-test mode.
    */
   approveCompat: (submissionId) =>
     apiRequest(`/submissions/${encodeURIComponent(submissionId)}/approve`, { method: "POST" }),
 
   /**
-   * Publish via compatibility endpoint.
+   * Publish via compatibility endpoint (DEPRECATED).
    * POST /submissions/{id}/publish
    */
   publishCompat: (submissionId) =>

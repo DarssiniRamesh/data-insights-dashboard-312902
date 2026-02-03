@@ -1,82 +1,224 @@
-# Lightweight React Template for KAVIA
+# Data Insights Dashboard - Frontend
 
-This project provides a minimal React template with a clean, modern UI and minimal dependencies.
+React-based frontend for the Data Product Publishing system.
 
-## Features
+## Overview
 
-- **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React
-- **Modern UI**: Clean, responsive design with KAVIA brand styling
-- **Fast**: Minimal dependencies for quick loading times
-- **Simple**: Easy to understand and modify
+Modern, clean UI for managing data assets (formerly "submissions") with:
+- **Standardized data asset metadata**: title, description, owner
+- Data asset creation and tracking
+- Validation status monitoring
+- Approval workflows with e-signatures
+- Audit trail access
+- Dashboard analytics
 
-## Getting Started
+## Terminology
 
-In the project directory, you can run:
+**Data Asset**: The standard term for a versioned data product package with standardized metadata. Previously called "submission".
 
-### `npm start`
+**Metadata Fields** (standardized):
+- `title`: Required, 1-200 characters
+- `description`: Optional, max 2000 characters
+- `owner`: Required, 1-120 characters
 
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Pages
 
-### `npm test`
+### Dashboard (`/`)
+- View tracked data assets
+- Check status and validation state
+- Remove tracked assets
+- Terminology note displayed for clarity
 
-Launches the test runner in interactive watch mode.
+### Data Assets (Submissions) (`/submissions`)
+- Create new data assets via compatibility endpoint
+- Form includes:
+  - Title (Name): Required, 1-200 chars with character counter
+  - Description: Optional, max 2000 chars with counter
+  - Version: Required
+  - Artifact URIs: Required
+  - Domain metadata: Optional (GxP flag)
+- Field validation enforces metadata constraints
+- Help text explains data asset metadata standards
 
-### `npm run build`
+### Validation (`/validation`)
+- Trigger validation runs for data assets
+- View validation reports
+- Check quality gate status
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Approvals (`/approvals`)
+- Approve or reject data assets
+- Electronic signature support
+- SoD enforcement (UI warns about self-approval)
 
-## Customization
+### Publish (`/publish`)
+- Publish approved data assets
+- View publication status
 
-### Colors
+## API Integration
 
-The main brand colors are defined as CSS variables in `src/App.css`:
+### Data Assets API (New)
+```javascript
+import { dataAssetsApi } from "./api/endpoints";
 
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
+// Create data asset with standardized metadata
+const result = await dataAssetsApi.create(draftId, {
+  title: "My Data Asset",
+  description: "Optional description",
+  owner: "user@example.com"
+}, currentUser);
+
+// Get data asset
+const dataAsset = await dataAssetsApi.get(dataAssetId);
+
+// Trigger validation
+await dataAssetsApi.triggerValidation(dataAssetId, { validation_profile: "baseline" }, currentUser);
+
+// Approve
+await dataAssetsApi.approve(dataAssetId, {
+  decision: "publish",
+  rationale: "Meets all requirements",
+  password: "userPassword",
+  signature_reason: "Approval of data asset"
+}, currentUser);
 ```
 
-### Components
+### Submissions API (Deprecated - Backward Compatibility)
+```javascript
+import { submissionsApi } from "./api/endpoints";
 
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
+// Legacy compatibility endpoint
+const result = await submissionsApi.createCompat({
+  name: "Product Data",
+  version: "1.0.0",
+  description: "Q1 2024 data",
+  artifacts: [{ uri: "s3://bucket/file.csv" }]
+});
+```
 
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
+## Environment Variables
 
-## Learn More
+Create a `.env` file:
+```
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_SITE_URL=http://localhost:3000
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Running
 
-### Code Splitting
+```bash
+# Install dependencies
+npm install
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+# Start development server
+npm start
 
-### Analyzing the Bundle Size
+# Build for production
+npm run build
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# Run tests
+npm test
+```
 
-### Making a Progressive Web App
+## Theme
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+**Pure White** theme with:
+- Primary: #374151 (gray-700)
+- Secondary: #9CA3AF (gray-400)
+- Success: #10B981 (emerald-500)
+- Error: #EF4444 (red-500)
+- Background: #f9fafb (gray-50)
+- Surface: #ffffff (white)
+- Text: #111827 (gray-900)
 
-### Advanced Configuration
+Minimalist style with clean layouts and professional appearance.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Layout
 
-### Deployment
+Sidebar navigation with main content area:
+- Dashboard (home)
+- Data Assets (Submissions)
+- Validation
+- Approvals
+- Publish
+- Audit (if auditor role)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Components
 
-### `npm run build` fails to minify
+### ErrorBanner
+Displays validation and API errors
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Forms
+- Standardized field labels
+- Character counters for length-constrained fields
+- Inline validation
+- Help text with metadata constraints
+
+### Tables
+- Data asset listing
+- Validation status
+- Audit events
+
+## Migration Guide
+
+### For Developers
+
+**Old (Deprecated)**:
+```javascript
+const result = await submissionsApi.createCompat({
+  name: "Data Product",
+  version: "1.0.0"
+});
+```
+
+**New (Standardized)**:
+```javascript
+const result = await dataAssetsApi.create(draftId, {
+  title: "Data Product",
+  description: "Description of the data asset",
+  owner: currentUser.email
+}, currentUser);
+```
+
+### Key Changes
+
+1. **Terminology**: "Submission" → "Data Asset"
+2. **Metadata**: Standardized to `title`, `description`, `owner`
+3. **API Endpoints**: `/api/v1/data-assets` (new) vs `/api/v1/submissions` (deprecated)
+4. **Form Fields**: Character limits enforced, help text added
+5. **Validation**: Frontend validates metadata constraints before submission
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- SubmissionsPage.test.js
+```
+
+## Accessibility
+
+- Semantic HTML
+- ARIA labels where needed
+- Keyboard navigation support
+- Focus management
+- Error announcements
+
+## Browser Support
+
+- Chrome/Edge (latest 2 versions)
+- Firefox (latest 2 versions)
+- Safari (latest 2 versions)
+
+## Contributing
+
+When adding new features:
+1. Use standardized "data asset" terminology
+2. Enforce metadata constraints (title, description, owner)
+3. Add character counters for length-limited fields
+4. Include help text explaining constraints
+5. Update this README with new pages/components

@@ -1,237 +1,223 @@
 import React, { useState } from "react";
-import { ErrorBanner } from "../components/ErrorBanner";
-import { LoadingPill } from "../components/LoadingPill";
 import { submissionsApi, validationApi } from "../api/endpoints";
-import { useAuth } from "../context/AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
+import { useAuth } from "../contexts/AuthContext";
 
 // PUBLIC_INTERFACE
 export function ValidationPage() {
-  /** Validation & quality gates actions per submission. */
-  const { profile } = useAuth();
-
+  /** 
+   * Validation page: trigger validation runs and view reports.
+   * 
+   * Terminology: 'data asset' (formerly 'submission')
+   */
+  const { currentUser } = useAuth();
   const [submissionId, setSubmissionId] = useState("");
   const [validationProfile, setValidationProfile] = useState("baseline");
 
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [triggerLoading, setTriggerLoading] = useState(false);
+  const [triggerResult, setTriggerResult] = useState(null);
+  const [triggerError, setTriggerError] = useState("");
 
-  const [submission, setSubmission] = useState(null);
-  const [validationTrigger, setValidationTrigger] = useState(null);
-  const [qualityGateResult, setQualityGateResult] = useState(null);
-
+  const [reportId, setReportId] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
   const [report, setReport] = useState(null);
+  const [reportError, setReportError] = useState("");
 
-  async function loadSubmission() {
-    setErrorMsg("");
-    setReport(null);
-    setValidationTrigger(null);
-    setQualityGateResult(null);
+  // Also support quality gates compat endpoint
+  const [qgSubmissionId, setQgSubmissionId] = useState("");
+  const [qgLoading, setQgLoading] = useState(false);
+  const [qgResult, setQgResult] = useState(null);
+  const [qgError, setQgError] = useState("");
+
+  async function onTriggerValidation(e) {
+    e.preventDefault();
+    setTriggerError("");
+    setTriggerResult(null);
 
     if (!submissionId.trim()) {
-      setErrorMsg("Enter a submission ID.");
+      setTriggerError("Data asset ID is required.");
       return;
     }
 
-    setLoading(true);
-    try {
-      const s = await submissionsApi.get(submissionId.trim());
-      setSubmission(s);
-
-      if (s.latest_validation_run_id) {
-        const rep = await validationApi.getReport(s.latest_validation_run_id);
-        setReport(rep);
-      }
-    } catch (err) {
-      setErrorMsg(err.message || "Failed to load submission.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function triggerValidation() {
-    setErrorMsg("");
-    setValidationTrigger(null);
-    setReport(null);
-
-    if (!submissionId.trim()) {
-      setErrorMsg("Enter a submission ID.");
-      return;
-    }
-
-    setLoading(true);
+    setTriggerLoading(true);
     try {
       const res = await submissionsApi.triggerValidation(
         submissionId.trim(),
         { validation_profile: validationProfile },
-        profile
+        currentUser
       );
-      setValidationTrigger(res);
-
-      // Re-fetch submission to learn latest_validation_run_id (when available).
-      const s = await submissionsApi.get(submissionId.trim());
-      setSubmission(s);
-
-      if (s.latest_validation_run_id) {
-        const rep = await validationApi.getReport(s.latest_validation_run_id);
-        setReport(rep);
-      }
+      setTriggerResult(res);
     } catch (err) {
-      setErrorMsg(err.message || "Validation trigger failed.");
+      setTriggerError(err.message || "Validation trigger failed.");
     } finally {
-      setLoading(false);
+      setTriggerLoading(false);
     }
   }
 
-  async function runQualityGatesCompat() {
-    setErrorMsg("");
-    setQualityGateResult(null);
+  async function onGetReport(e) {
+    e.preventDefault();
+    setReportError("");
+    setReport(null);
 
-    if (!submissionId.trim()) {
-      setErrorMsg("Enter a submission ID.");
+    if (!reportId.trim()) {
+      setReportError("Validation run ID is required.");
       return;
     }
 
-    setLoading(true);
+    setReportLoading(true);
     try {
-      const res = await submissionsApi.runQualityGatesCompat(submissionId.trim());
-      setQualityGateResult(res);
+      const res = await validationApi.getReport(reportId.trim());
+      setReport(res);
     } catch (err) {
-      // Compat endpoints may return deterministic failures; we surface message.
-      setErrorMsg(err.message || "Quality gates run failed.");
+      setReportError(err.message || "Report fetch failed.");
     } finally {
-      setLoading(false);
+      setReportLoading(false);
+    }
+  }
+
+  async function onRunQualityGates(e) {
+    e.preventDefault();
+    setQgError("");
+    setQgResult(null);
+
+    if (!qgSubmissionId.trim()) {
+      setQgError("Data asset ID is required.");
+      return;
+    }
+
+    setQgLoading(true);
+    try {
+      const res = await submissionsApi.runQualityGatesCompat(qgSubmissionId.trim());
+      setQgResult(res);
+    } catch (err) {
+      setQgError(err.message || "Quality gates failed.");
+    } finally {
+      setQgLoading(false);
     }
   }
 
   return (
     <div>
       <h1 className="page-title">Validation</h1>
-      <p className="page-subtitle">Trigger validation and quality gates, view pass/fail details.</p>
-
-      <ErrorBanner message={errorMsg} />
+      <p className="page-subtitle">
+        Trigger validation runs for data assets and view validation reports.
+      </p>
 
       <div className="card">
-        <h2 className="card-title">Select submission</h2>
+        <h2 className="card-title">Trigger Validation</h2>
+        <p className="help" style={{ marginBottom: "1rem" }}>
+          Trigger a validation run for a data asset. Validation checks metadata completeness, 
+          state validity, and schema compliance.
+        </p>
 
-        <div className="grid-3">
+        <ErrorBanner message={triggerError} />
+
+        <form className="form" onSubmit={onTriggerValidation}>
           <label className="field">
-            <span className="field-label">Submission ID</span>
+            <span className="field-label">Data Asset ID (formerly Submission ID)</span>
             <input
               className="input"
               value={submissionId}
               onChange={(e) => setSubmissionId(e.target.value)}
-              placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+              placeholder="e.g., sub-12345"
             />
           </label>
 
           <label className="field">
-            <span className="field-label">Validation profile</span>
-            <input
+            <span className="field-label">Validation Profile</span>
+            <select
               className="input"
               value={validationProfile}
               onChange={(e) => setValidationProfile(e.target.value)}
-              placeholder="baseline"
+            >
+              <option value="baseline">Baseline</option>
+              <option value="strict">Strict</option>
+            </select>
+          </label>
+
+          <button className="btn btn-primary" type="submit" disabled={triggerLoading}>
+            {triggerLoading ? "Triggering…" : "Trigger Validation"}
+          </button>
+        </form>
+
+        {triggerResult ? (
+          <div className="result" style={{ marginTop: "1rem" }}>
+            <h3>Validation Triggered</h3>
+            <pre className="codeblock">{JSON.stringify(triggerResult, null, 2)}</pre>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="card">
+        <h2 className="card-title">Get Validation Report</h2>
+
+        <ErrorBanner message={reportError} />
+
+        <form className="form" onSubmit={onGetReport}>
+          <label className="field">
+            <span className="field-label">Validation Run ID</span>
+            <input
+              className="input"
+              value={reportId}
+              onChange={(e) => setReportId(e.target.value)}
+              placeholder="e.g., val-67890"
             />
           </label>
 
-          <div className="field">
-            <span className="field-label">Actions</span>
-            <div className="button-row">
-              <button className="btn btn-secondary" type="button" onClick={loadSubmission}>
-                Load
-              </button>
-              <button className="btn btn-primary" type="button" onClick={triggerValidation}>
-                Trigger validation
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={runQualityGatesCompat}>
-                Run quality gates (compat)
-              </button>
-            </div>
-          </div>
-        </div>
+          <button className="btn btn-primary" type="submit" disabled={reportLoading}>
+            {reportLoading ? "Fetching…" : "Get Report"}
+          </button>
+        </form>
 
-        {loading ? <LoadingPill /> : null}
+        {report ? (
+          <div className="result" style={{ marginTop: "1rem" }}>
+            <h3>Validation Report</h3>
+            <div className="field">
+              <span className="field-label">Overall Status</span>
+              <span
+                className={`ui-pill ${
+                  report.overall_status === "pass" ? "ui-pill-success" : "ui-pill-error"
+                }`}
+              >
+                {report.overall_status}
+              </span>
+            </div>
+            <pre className="codeblock">{JSON.stringify(report, null, 2)}</pre>
+          </div>
+        ) : null}
       </div>
 
-      {submission ? (
-        <div className="card">
-          <h2 className="card-title">Submission</h2>
-          <pre className="codeblock">{JSON.stringify(submission, null, 2)}</pre>
-        </div>
-      ) : null}
+      <div className="card">
+        <h2 className="card-title">Run Quality Gates (Compatibility Endpoint)</h2>
+        <p className="help" style={{ marginBottom: "1rem" }}>
+          Compatibility endpoint for running quality gates checks.
+        </p>
 
-      {validationTrigger ? (
-        <div className="card">
-          <h2 className="card-title">Validation trigger response</h2>
-          <pre className="codeblock">{JSON.stringify(validationTrigger, null, 2)}</pre>
-        </div>
-      ) : null}
+        <ErrorBanner message={qgError} />
 
-      {qualityGateResult ? (
-        <div className="card">
-          <h2 className="card-title">Quality gates (compat) result</h2>
-          <pre className="codeblock">{JSON.stringify(qualityGateResult, null, 2)}</pre>
-          <div className="help">
-            Compat contract: may return 200/409 depending on state; errors are displayed above.
+        <form className="form" onSubmit={onRunQualityGates}>
+          <label className="field">
+            <span className="field-label">Data Asset ID</span>
+            <input
+              className="input"
+              value={qgSubmissionId}
+              onChange={(e) => setQgSubmissionId(e.target.value)}
+              placeholder="e.g., sub-12345"
+            />
+          </label>
+
+          <button className="btn btn-primary" type="submit" disabled={qgLoading}>
+            {qgLoading ? "Running…" : "Run Quality Gates"}
+          </button>
+        </form>
+
+        {qgResult ? (
+          <div className="result" style={{ marginTop: "1rem" }}>
+            <h3>Quality Gates Result</h3>
+            <pre className="codeblock">{JSON.stringify(qgResult, null, 2)}</pre>
           </div>
-        </div>
-      ) : null}
-
-      {report ? (
-        <div className="card">
-          <h2 className="card-title">
-            Validation report:{" "}
-            <span
-              className={`ui-pill ${
-                report.overall_status === "pass" ? "ui-pill-success" : "ui-pill-error"
-              }`}
-            >
-              {report.overall_status}
-            </span>
-          </h2>
-          <div className="help mono">Validation run: {report.validation_run_id}</div>
-
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Check</th>
-                  <th>Status</th>
-                  <th>Metrics / Findings</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(report.checks || []).map((c) => (
-                  <tr key={c.check_name}>
-                    <td>{c.check_name}</td>
-                    <td>
-                      <span
-                        className={`ui-pill ${
-                          c.status === "pass" ? "ui-pill-success" : "ui-pill-error"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="mini-json">
-                        <div className="help">metrics</div>
-                        <pre className="codeblock codeblock-small">
-                          {JSON.stringify(c.metrics || {}, null, 2)}
-                        </pre>
-                        <div className="help">findings</div>
-                        <pre className="codeblock codeblock-small">
-                          {JSON.stringify(c.findings || [], null, 2)}
-                        </pre>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }

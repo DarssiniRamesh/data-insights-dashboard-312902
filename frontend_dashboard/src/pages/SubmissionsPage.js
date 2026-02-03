@@ -5,7 +5,12 @@ import { trackSubmissionId } from "../utils/submissionStore";
 
 // PUBLIC_INTERFACE
 export function SubmissionsPage() {
-  /** Create and track submissions via compatibility endpoint. */
+  /** 
+   * Create and track submissions via compatibility endpoint.
+   * 
+   * Note: This page uses the legacy submission compatibility endpoint.
+   * Future implementations should use standardized data asset metadata (title, description, owner).
+   */
   const [name, setName] = useState("");
   const [version, setVersion] = useState("1.0.0");
   const [description, setDescription] = useState("");
@@ -31,12 +36,21 @@ export function SubmissionsPage() {
     setErrorMsg("");
     setCreated(null);
 
+    // Validation for standardized metadata fields
     if (!name.trim()) {
-      setErrorMsg("Name is required.");
+      setErrorMsg("Name is required (maps to 'title' in data asset metadata).");
+      return;
+    }
+    if (name.trim().length > 200) {
+      setErrorMsg("Name must be 200 characters or less.");
       return;
     }
     if (!version.trim()) {
       setErrorMsg("Version is required.");
+      return;
+    }
+    if (description.trim().length > 2000) {
+      setErrorMsg("Description must be 2000 characters or less.");
       return;
     }
     if (!artifacts.length) {
@@ -76,23 +90,45 @@ export function SubmissionsPage() {
 
   return (
     <div>
-      <h1 className="page-title">Submissions</h1>
-      <p className="page-subtitle">Submit a data product package for pipeline processing.</p>
+      <h1 className="page-title">Data Assets (Submissions)</h1>
+      <p className="page-subtitle">
+        Submit a data asset for processing. Data assets use standardized metadata: title (name), description, and owner.
+      </p>
 
       <ErrorBanner message={errorMsg} />
 
       <div className="card">
-        <h2 className="card-title">New submission</h2>
+        <h2 className="card-title">New Data Asset</h2>
+        <p className="help" style={{ marginBottom: "1rem" }}>
+          <strong>Note:</strong> This form uses the legacy compatibility endpoint. 
+          Standard data asset metadata includes:
+          <ul style={{ marginLeft: "1.5rem", marginTop: "0.5rem" }}>
+            <li><strong>Title</strong>: Required, 1-200 characters (Name field below)</li>
+            <li><strong>Description</strong>: Optional, max 2000 characters</li>
+            <li><strong>Owner</strong>: Required, 1-120 characters (auto-set to current user)</li>
+          </ul>
+        </p>
 
         <form className="form" onSubmit={onSubmit}>
           <div className="grid-2">
             <label className="field">
-              <span className="field-label">Name</span>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+              <span className="field-label">
+                Title (Name) <span style={{ color: "red" }}>*</span>
+              </span>
+              <input 
+                className="input" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
+                maxLength={200}
+                placeholder="1-200 characters"
+              />
+              <span className="help">{name.length}/200 characters</span>
             </label>
 
             <label className="field">
-              <span className="field-label">Version</span>
+              <span className="field-label">
+                Version <span style={{ color: "red" }}>*</span>
+              </span>
               <input
                 className="input"
                 value={version}
@@ -108,11 +144,16 @@ export function SubmissionsPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
+              maxLength={2000}
+              placeholder="Optional, max 2000 characters"
             />
+            <span className="help">{description.length}/2000 characters</span>
           </label>
 
           <label className="field">
-            <span className="field-label">Artifact URIs (one per line)</span>
+            <span className="field-label">
+              Artifact URIs (one per line) <span style={{ color: "red" }}>*</span>
+            </span>
             <textarea
               className="textarea"
               value={artifactLines}
@@ -137,17 +178,17 @@ export function SubmissionsPage() {
           </div>
 
           <button className="btn btn-primary" type="submit" disabled={submitting}>
-            {submitting ? "Submitting…" : "Submit"}
+            {submitting ? "Submitting…" : "Submit Data Asset"}
           </button>
         </form>
       </div>
 
       {created ? (
         <div className="card">
-          <h2 className="card-title">Submission response</h2>
+          <h2 className="card-title">Data Asset Created</h2>
           <pre className="codeblock">{JSON.stringify(created, null, 2)}</pre>
           <div className="help">
-            If a <code>submission_id</code> was returned, it has been saved locally and will appear in
+            If a <code>submission_id</code> (or <code>data_asset_id</code>) was returned, it has been saved locally and will appear in
             Dashboard.
           </div>
         </div>

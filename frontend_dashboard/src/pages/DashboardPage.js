@@ -6,7 +6,12 @@ import { getTrackedSubmissionIds, untrackSubmissionId } from "../utils/submissio
 
 // PUBLIC_INTERFACE
 export function DashboardPage() {
-  /** Dashboard view: shows tracked submissions and their workflow status. */
+  /** 
+   * Dashboard view: shows tracked data assets and their workflow status.
+   * 
+   * Note: Uses legacy submission API for backward compatibility.
+   * Data assets were formerly called "submissions".
+   */
   const [ids, setIds] = useState(() => getTrackedSubmissionIds());
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +52,12 @@ export function DashboardPage() {
   return (
     <div>
       <h1 className="page-title">Dashboard</h1>
-      <p className="page-subtitle">Status tracking across your locally tracked submissions.</p>
+      <p className="page-subtitle">
+        Status tracking for your locally tracked data assets. 
+        <span style={{ display: "block", fontSize: "0.9em", marginTop: "0.25rem", opacity: 0.8 }}>
+          (Data assets were formerly called "submissions")
+        </span>
+      </p>
 
       <div className="toolbar">
         <button className="btn btn-secondary" onClick={refresh} type="button">
@@ -59,18 +69,18 @@ export function DashboardPage() {
       <ErrorBanner message={errorMsg} />
 
       <div className="card">
-        <h2 className="card-title">Tracked submissions</h2>
+        <h2 className="card-title">Tracked Data Assets</h2>
 
         {!ids.length ? (
           <div className="empty">
-            No tracked submissions yet. Create one in <strong>Submissions</strong>.
+            No tracked data assets yet. Create one in <strong>Data Assets (Submissions)</strong>.
           </div>
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Submission ID</th>
+                  <th>Data Asset ID</th>
                   <th>Package</th>
                   <th>State</th>
                   <th>Validation run</th>
@@ -120,8 +130,8 @@ export function DashboardPage() {
       </div>
 
       <div className="help">
-        Note: the backend spec does not include a submissions list endpoint; this dashboard shows
-        submissions created/tracked in this browser.
+        Note: This dashboard shows data assets created/tracked in this browser. 
+        The backend uses standardized metadata: title, description, and owner.
       </div>
     </div>
   );

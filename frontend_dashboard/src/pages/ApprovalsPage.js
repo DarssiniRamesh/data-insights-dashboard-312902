@@ -1,33 +1,39 @@
 import React, { useState } from "react";
-import { ErrorBanner } from "../components/ErrorBanner";
-import { LoadingPill } from "../components/LoadingPill";
 import { submissionsApi } from "../api/endpoints";
-import { useAuth } from "../context/AuthContext";
+import { ErrorBanner } from "../components/ErrorBanner";
+import { useAuth } from "../contexts/AuthContext";
 
 // PUBLIC_INTERFACE
 export function ApprovalsPage() {
-  /** Approve/reject submissions (SoD + e-sign enforced by backend). */
-  const { profile } = useAuth();
-
+  /**
+   * Approvals page: approve or reject data assets with e-signature.
+   * 
+   * Terminology: 'data asset' (formerly 'submission')
+   * Enforces Segregation of Duties (SoD): approver cannot be submitter.
+   */
+  const { currentUser } = useAuth();
   const [submissionId, setSubmissionId] = useState("");
-  const [decision, setDecision] = useState("publish"); // publish|reject
+  const [decision, setDecision] = useState("publish");
   const [rationale, setRationale] = useState("");
   const [password, setPassword] = useState("");
+  const [signatureReason, setSignatureReason] = useState("Approval decision");
 
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  async function onApprove() {
+  async function onSubmit(e) {
+    e.preventDefault();
     setErrorMsg("");
     setResult(null);
 
     if (!submissionId.trim()) {
-      setErrorMsg("Enter a submission ID.");
+      setErrorMsg("Data asset ID is required.");
       return;
     }
-    if (!password) {
-      setErrorMsg("Password re-entry is required for electronic signature.");
+
+    if (!password.trim()) {
+      setErrorMsg("Password is required for electronic signature.");
       return;
     }
 
@@ -37,17 +43,15 @@ export function ApprovalsPage() {
         submissionId.trim(),
         {
           decision,
-          rationale,
-          password,
-          signature_reason: decision === "publish" ? "Approve for publishing" : "Reject submission",
+          rationale: rationale.trim() || null,
+          password: password.trim(),
+          signature_reason: signatureReason.trim(),
         },
-        profile
+        currentUser
       );
       setResult(res);
-      setPassword("");
-      setRationale("");
+      setPassword(""); // Clear password after use
     } catch (err) {
-      // 403 is typical for SoD violation; show message.
       setErrorMsg(err.message || "Approval failed.");
     } finally {
       setLoading(false);
@@ -58,73 +62,94 @@ export function ApprovalsPage() {
     <div>
       <h1 className="page-title">Approvals</h1>
       <p className="page-subtitle">
-        Approve or reject submissions with electronic signature and segregation of duties.
+        Approve or reject data assets with electronic signature and Segregation of Duties enforcement.
       </p>
 
-      <ErrorBanner message={errorMsg} />
-
       <div className="card">
-        <h2 className="card-title">Approval action</h2>
+        <h2 className="card-title">Approval Decision</h2>
+        <p className="help" style={{ marginBottom: "1rem" }}>
+          <strong>Segregation of Duties (SoD):</strong> You cannot approve data assets that you submitted. 
+          The system will enforce this rule and reject self-approvals.
+        </p>
 
-        <div className="grid-2">
+        <ErrorBanner message={errorMsg} />
+
+        <form className="form" onSubmit={onSubmit}>
           <label className="field">
-            <span className="field-label">Submission ID</span>
+            <span className="field-label">
+              Data Asset ID <span style={{ color: "red" }}>*</span>
+            </span>
             <input
               className="input"
               value={submissionId}
               onChange={(e) => setSubmissionId(e.target.value)}
+              placeholder="e.g., sub-12345"
             />
+            <span className="help">The ID of the data asset to approve or reject</span>
           </label>
 
           <label className="field">
             <span className="field-label">Decision</span>
-            <select className="select" value={decision} onChange={(e) => setDecision(e.target.value)}>
-              <option value="publish">Approve (publish)</option>
+            <select className="input" value={decision} onChange={(e) => setDecision(e.target.value)}>
+              <option value="publish">Approve (Publish)</option>
               <option value="reject">Reject</option>
             </select>
           </label>
-        </div>
 
-        <label className="field">
-          <span className="field-label">Rationale (optional)</span>
-          <textarea
-            className="textarea"
-            value={rationale}
-            onChange={(e) => setRationale(e.target.value)}
-            rows={3}
-          />
-        </label>
+          <label className="field">
+            <span className="field-label">Rationale</span>
+            <textarea
+              className="textarea"
+              value={rationale}
+              onChange={(e) => setRationale(e.target.value)}
+              rows={3}
+              placeholder="Optional: reason for approval or rejection"
+            />
+          </label>
 
-        <label className="field">
-          <span className="field-label">Password (e-sign re-auth)</span>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          <div className="help">
-            Backend validates e-sign and SoD. A 403 error typically indicates a SoD violation or
-            insufficient role.
-          </div>
-        </label>
+          <label className="field">
+            <span className="field-label">
+              Password (for e-signature) <span style={{ color: "red" }}>*</span>
+            </span>
+            <input
+              type="password"
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your password"
+            />
+            <span className="help">
+              Required for electronic signature verification (21 CFR Part 11 aligned)
+            </span>
+          </label>
 
-        <div className="button-row">
-          <button className="btn btn-primary" type="button" onClick={onApprove} disabled={loading}>
-            Submit e-sign approval
+          <label className="field">
+            <span className="field-label">Signature Reason</span>
+            <input
+              className="input"
+              value={signatureReason}
+              onChange={(e) => setSignatureReason(e.target.value)}
+            />
+            <span className="help">Reason for applying electronic signature</span>
+          </label>
+
+          <button className="btn btn-primary" type="submit" disabled={loading}>
+            {loading ? "Processing…" : decision === "publish" ? "Approve & Publish" : "Reject"}
           </button>
-        </div>
+        </form>
 
-        {loading ? <LoadingPill /> : null}
+        {result ? (
+          <div className="result" style={{ marginTop: "1rem" }}>
+            <h3>Approval Result</h3>
+            <pre className="codeblock">{JSON.stringify(result, null, 2)}</pre>
+            {result.evidence_package_id ? (
+              <div className="help" style={{ marginTop: "0.5rem" }}>
+                Evidence package created: <code>{result.evidence_package_id}</code>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-
-      {result ? (
-        <div className="card">
-          <h2 className="card-title">Result</h2>
-          <pre className="codeblock">{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      ) : null}
     </div>
   );
 }
