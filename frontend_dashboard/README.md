@@ -4,7 +4,7 @@ React-based frontend for the Data Product Publishing system.
 
 ## Overview
 
-Modern, clean UI for managing data assets (formerly "submissions") with:
+Modern, clean UI for managing data assets (legacy term: "submission" (deprecated, use data asset)) with:
 - **Standardized data asset metadata**: title, description, owner
 - Data asset creation and tracking
 - Validation status monitoring
@@ -14,7 +14,7 @@ Modern, clean UI for managing data assets (formerly "submissions") with:
 
 ## Terminology
 
-**Data Asset**: The standard term for a versioned data product package with standardized metadata. Previously called "submission".
+**Data Asset**: The standard term for a versioned data product package with standardized metadata. Legacy term: "submission" (deprecated, use data asset).
 
 **Metadata Fields** (standardized):
 - `title`: Required, 1-200 characters
@@ -185,7 +185,7 @@ const result = await dataAssetsApi.create(draftId, {
 2. **Metadata**: Standardized to `title`, `description`, `owner`
 3. **API Endpoints**: `/api/v1/data-assets` (new) vs `/api/v1/submissions` (deprecated)
 4. **Form Fields**: Character limits enforced, help text added
-5. **Validation**: Frontend validates metadata constraints before submission
+5. **Validation**: Frontend validates metadata constraints before data asset creation
 
 ## Testing
 

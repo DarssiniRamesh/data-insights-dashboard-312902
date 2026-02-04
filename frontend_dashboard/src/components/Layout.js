@@ -26,7 +26,7 @@ export function Layout() {
             Dashboard
           </NavLink>
           <NavLink className="nav-link" to="/submissions">
-            Submissions
+            Data Assets
           </NavLink>
           <NavLink className="nav-link" to="/validation">
             Validation

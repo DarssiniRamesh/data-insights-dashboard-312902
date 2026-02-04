@@ -8,9 +8,8 @@ import { getTrackedSubmissionIds, untrackSubmissionId } from "../utils/submissio
 export function DashboardPage() {
   /** 
    * Dashboard view: shows tracked data assets and their workflow status.
-   * 
-   * Note: Uses legacy submission API for backward compatibility.
-   * Data assets were formerly called "submissions".
+   *
+   * Compatibility: uses legacy submissions API (deprecated, use data asset) for backward compatibility.
    */
   const [ids, setIds] = useState(() => getTrackedSubmissionIds());
   const [rows, setRows] = useState([]);
@@ -53,9 +52,9 @@ export function DashboardPage() {
     <div>
       <h1 className="page-title">Dashboard</h1>
       <p className="page-subtitle">
-        Status tracking for your locally tracked data assets. 
+        Status tracking for your locally tracked data assets.
         <span style={{ display: "block", fontSize: "0.9em", marginTop: "0.25rem", opacity: 0.8 }}>
-          (Data assets were formerly called "submissions")
+          (Legacy term: “submission” (deprecated, use data asset))
         </span>
       </p>
 

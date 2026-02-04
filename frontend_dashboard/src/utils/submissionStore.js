@@ -2,7 +2,7 @@ const KEY = "tracked_submission_ids";
 
 // PUBLIC_INTERFACE
 export function getTrackedSubmissionIds() {
-  /** Returns a list of submission IDs tracked locally in this browser. */
+  /** Returns a list of data asset IDs tracked locally in this browser (legacy storage key name retained). */
   const raw = localStorage.getItem(KEY);
   if (!raw) return [];
   try {
@@ -15,7 +15,7 @@ export function getTrackedSubmissionIds() {
 
 // PUBLIC_INTERFACE
 export function trackSubmissionId(id) {
-  /** Add a submission ID to the local tracked list (deduped). */
+  /** Add a data asset ID to the local tracked list (deduped). (Legacy function name retained.) */
   if (!id) return;
   const existing = new Set(getTrackedSubmissionIds());
   existing.add(id);
@@ -24,7 +24,7 @@ export function trackSubmissionId(id) {
 
 // PUBLIC_INTERFACE
 export function untrackSubmissionId(id) {
-  /** Remove a submission ID from local tracked list. */
+  /** Remove a data asset ID from local tracked list. (Legacy function name retained.) */
   const next = getTrackedSubmissionIds().filter((x) => x !== id);
   localStorage.setItem(KEY, JSON.stringify(next));
 }

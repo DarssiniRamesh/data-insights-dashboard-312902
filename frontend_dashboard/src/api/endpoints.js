@@ -95,9 +95,9 @@ export const dataAssetsApi = {
 // PUBLIC_INTERFACE
 export const submissionsApi = {
   /**
-   * Create submission via compatibility endpoint (DEPRECATED).
+   * Create via legacy submissions compatibility endpoint (DEPRECATED; use data asset).
    * Contract: POST /submissions expects simplified payload: name, version, description, artifacts, metadata.
-   * 
+   *
    * Note: This endpoint is deprecated. Use dataAssetsApi.create() instead for new code.
    */
   createCompat: (payload) => apiRequest("/submissions", { method: "POST", json: payload }),

@@ -1,6 +1,6 @@
 /**
  * FR/NFR implementation summary (GxP traceability):
- * - FR-DPP-001: Provides a UI form that creates a data asset via legacy submission compatibility endpoint.
+ * - FR-DPP-001: Provides a UI form that creates a data asset via legacy submissions compatibility endpoint (deprecated).
  * - NFR-DPP-020 (Automation support): Stores returned identifier locally for use in other workflow pages/tests.
  *
  * Note: This page is legacy/compat; new UI should prefer the standardized data asset endpoints directly.
@@ -13,9 +13,9 @@ import { trackSubmissionId } from "../utils/submissionStore";
 // PUBLIC_INTERFACE
 export function SubmissionsPage() {
   /** 
-   * Create and track submissions via compatibility endpoint.
-   * 
-   * Note: This page uses the legacy submission compatibility endpoint.
+   * Create and track data assets via deprecated compatibility endpoint.
+   *
+   * Compatibility: Uses legacy “submissions” endpoint (deprecated, use data asset).
    * Future implementations should use standardized data asset metadata (title, description, owner).
    */
   const [name, setName] = useState("");
@@ -91,7 +91,7 @@ export function SubmissionsPage() {
       setName("");
       setDescription("");
     } catch (err) {
-      setErrorMsg(err.message || "Submission failed.");
+      setErrorMsg(err.message || "Data asset submission failed.");
     } finally {
       setSubmitting(false);
     }

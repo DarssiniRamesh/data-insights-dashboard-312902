@@ -62,7 +62,7 @@ export function AuditPage() {
               className="input"
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
-              placeholder="submission, draft, evidence, ..."
+              placeholder="data_asset, draft, evidence, ..."
             />
           </label>
 
