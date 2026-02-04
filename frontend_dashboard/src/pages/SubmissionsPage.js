@@ -1,3 +1,10 @@
+/**
+ * FR/NFR implementation summary (GxP traceability):
+ * - FR-DPP-001: Provides a UI form that creates a data asset via legacy submission compatibility endpoint.
+ * - NFR-DPP-020 (Automation support): Stores returned identifier locally for use in other workflow pages/tests.
+ *
+ * Note: This page is legacy/compat; new UI should prefer the standardized data asset endpoints directly.
+ */
 import React, { useMemo, useState } from "react";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { submissionsApi } from "../api/endpoints";
@@ -31,6 +38,8 @@ export function SubmissionsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [created, setCreated] = useState(null);
 
+  // FR-DPP-001 (REQ): UI-driven creation of a data asset. This page uses the legacy compat API, but the intent
+  // is still “create with metadata” (title=name, description, owner=authenticated user in target-state).
   async function onSubmit(e) {
     e.preventDefault();
     setErrorMsg("");

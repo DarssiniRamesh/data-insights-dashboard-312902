@@ -1,3 +1,10 @@
+/**
+ * FR/NFR implementation summary (GxP traceability):
+ * - FR-DPP-001: dataAssetsApi.create() issues POST /api/v1/data-assets with standardized metadata.
+ * - FR-DPP-002: dataAssetsApi.get() issues GET /api/v1/data-assets/{id} for UI/workflow visibility.
+ * - NFR-DPP-009/NFR-DPP-010 (Identity/AuthZ): apiRequest attaches bearer token; backend enforces auth.
+ * - NFR-DPP-002 (Auditability): buildAuditContext() provides client_request_id for correlation/audit linkage.
+ */
 import { apiRequest } from "./client";
 import { buildAuditContext, buildSignatureBlock } from "../utils/audit";
 
@@ -27,6 +34,9 @@ export const dataAssetsApi = {
    * Create data asset with standardized metadata.
    * Contract: POST /api/v1/data-assets expects: draft_id, metadata {title, description, owner}, audit_context
    */
+  // FR-DPP-001: Create data asset (title, description, owner)
+  // FR-DPP-001 (REQ): Create a data asset by sending {draft_id, metadata:{title,description,owner}, audit_context}
+  // to the backend; metadata constraints are enforced server-side and errors are surfaced to the UI.
   create: (draftId, metadata, currentUser) =>
     apiRequest("/api/v1/data-assets", {
       method: "POST",
@@ -42,6 +52,9 @@ export const dataAssetsApi = {
     }),
 
   /** Get a data asset via /api/v1/data-assets/{data_asset_id}. */
+  // FR-DPP-002: Retrieve/list data assets
+  // FR-DPP-002 (REQ): Retrieve a data asset (by ID) so the UI can render metadata/state and drive
+  // validation/approval workflow actions.
   get: (dataAssetId) =>
     apiRequest(`/api/v1/data-assets/${encodeURIComponent(dataAssetId)}`, { method: "GET" }),
 
