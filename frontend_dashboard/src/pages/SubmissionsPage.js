@@ -108,15 +108,21 @@ export function SubmissionsPage() {
 
       <div className="card">
         <h2 className="card-title">New Data Asset</h2>
-        <p className="help" style={{ marginBottom: "1rem" }}>
-          <strong>Note:</strong> This form uses the legacy compatibility endpoint. 
-          Standard data asset metadata includes:
-          <ul style={{ marginLeft: "1.5rem", marginTop: "0.5rem" }}>
-            <li><strong>Title</strong>: Required, 1-200 characters (Name field below)</li>
-            <li><strong>Description</strong>: Optional, max 2000 characters</li>
-            <li><strong>Owner</strong>: Required, 1-120 characters (auto-set to current user)</li>
-          </ul>
+        <p className="help" style={{ marginBottom: "0.5rem" }}>
+          <strong>Note:</strong> This form uses the legacy compatibility endpoint. Standard data asset
+          metadata includes:
         </p>
+        <ul className="help" style={{ marginLeft: "1.5rem", marginTop: 0, marginBottom: "1rem" }}>
+          <li>
+            <strong>Title</strong>: Required, 1-200 characters (Name field below)
+          </li>
+          <li>
+            <strong>Description</strong>: Optional, max 2000 characters
+          </li>
+          <li>
+            <strong>Owner</strong>: Required, 1-120 characters (auto-set to current user)
+          </li>
+        </ul>
 
         <form className="form" onSubmit={onSubmit}>
           <div className="grid-2">
