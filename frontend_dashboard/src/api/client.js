@@ -7,7 +7,7 @@
  * - On 401, clears auth and redirects to /login.
  */
 
-const DEFAULT_API_BASE = "http://localhost:3001";
+const DEFAULT_API_BASE = "http://localhost:8000";
 
 function getApiBase() {
   const base = process.env.REACT_APP_API_BASE;

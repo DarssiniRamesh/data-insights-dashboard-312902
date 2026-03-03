@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 export function SettingsPage() {
   /** Settings and diagnostics page. */
   const { profile } = useAuth();
-  const apiBase = (process.env.REACT_APP_API_BASE || "http://localhost:3001").replace(/\/$/, "");
+  const apiBase = (process.env.REACT_APP_API_BASE || "http://localhost:8000").replace(/\/$/, "");
 
   return (
     <div>
