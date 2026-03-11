@@ -8,10 +8,35 @@
  */
 
 const DEFAULT_API_BASE = "http://localhost:3001";
+const PREVIEW_PROXY_API_BASE = "/proxy/3001";
 
+/**
+ * Decide which API base URL to use.
+ *
+ * Rules:
+ * 1) If REACT_APP_API_BASE is set, always honor it (explicit override).
+ * 2) In preview/proxied environments, default to the preview proxy path (/proxy/3001)
+ *    so the browser doesn't call :3001 directly (avoids CORS/502 issues).
+ * 3) Otherwise fall back to localhost:3001 for local dev.
+ */
 function getApiBase() {
-  const base = process.env.REACT_APP_API_BASE;
-  return (base && base.trim()) ? base.trim().replace(/\/$/, "") : DEFAULT_API_BASE;
+  const explicit = process.env.REACT_APP_API_BASE;
+  if (explicit && explicit.trim()) return explicit.trim().replace(/\/$/, "");
+
+  // Preview domains typically run behind a reverse proxy that exposes backend ports
+  // under /proxy/<port>. In that setup, calling :3001 directly fails.
+  const host = window.location.hostname || "";
+  const isPreviewDomain =
+    host.includes("preview") ||
+    host.includes("kavia") ||
+    host.includes("kavia.ai") ||
+    host.includes("onrender.com") ||
+    host.includes("vercel.app") ||
+    host.includes("netlify.app");
+
+  if (isPreviewDomain) return PREVIEW_PROXY_API_BASE;
+
+  return DEFAULT_API_BASE;
 }
 
 function safeJsonParse(text) {

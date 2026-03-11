@@ -5,7 +5,22 @@ import { useAuth } from "../context/AuthContext";
 export function SettingsPage() {
   /** Settings and diagnostics page. */
   const { profile } = useAuth();
-  const apiBase = (process.env.REACT_APP_API_BASE || "http://localhost:3001").replace(/\/$/, "");
+
+  const apiBase = (() => {
+    const explicit = process.env.REACT_APP_API_BASE;
+    if (explicit && explicit.trim()) return explicit.trim().replace(/\/$/, "");
+
+    const host = window.location.hostname || "";
+    const isPreviewDomain =
+      host.includes("preview") ||
+      host.includes("kavia") ||
+      host.includes("kavia.ai") ||
+      host.includes("onrender.com") ||
+      host.includes("vercel.app") ||
+      host.includes("netlify.app");
+
+    return (isPreviewDomain ? "/proxy/3001" : "http://localhost:3001").replace(/\/$/, "");
+  })();
 
   return (
     <div>
