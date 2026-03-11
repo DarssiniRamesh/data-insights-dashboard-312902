@@ -19,7 +19,9 @@ export function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const [rolesSet, setRolesSet] = useState(() => new Set(["publisher"]));
+  // Backend contract (see backend_api/interfaces/openapi.json + AuthService.VALID_ROLES):
+  // roles must be one or more of: submitter, reviewer, approver, auditor, admin
+  const [rolesSet, setRolesSet] = useState(() => new Set(["submitter"]));
 
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -87,14 +89,20 @@ export function RegisterPage() {
           <div className="field">
             <div className="field-label">Roles</div>
             <div className="checkbox-row">
-              {["publisher", "steward", "governance_admin", "auditor"].map((r) => (
-                <label key={r} className="checkbox">
+              {[
+                ["submitter", "Submitter"],
+                ["reviewer", "Reviewer"],
+                ["approver", "Approver"],
+                ["auditor", "Auditor"],
+                ["admin", "Admin"],
+              ].map(([value, label]) => (
+                <label key={value} className="checkbox">
                   <input
                     type="checkbox"
-                    checked={rolesSet.has(r)}
-                    onChange={() => setRolesSet((prev) => toggleRole(prev, r))}
+                    checked={rolesSet.has(value)}
+                    onChange={() => setRolesSet((prev) => toggleRole(prev, value))}
                   />
-                  <span>{r}</span>
+                  <span>{label}</span>
                 </label>
               ))}
             </div>
