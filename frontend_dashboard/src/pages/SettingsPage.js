@@ -7,8 +7,21 @@ export function SettingsPage() {
   const { profile } = useAuth();
 
   const apiBase = (() => {
+    const PREVIEW_PROXY_API_BASE = "/proxy/3001";
+
+    function normalizeBase(raw) {
+      if (!raw) return "";
+      const trimmed = String(raw).trim().replace(/\/$/, "");
+      if (!trimmed) return "";
+      if (trimmed === PREVIEW_PROXY_API_BASE || trimmed.startsWith(`${PREVIEW_PROXY_API_BASE}/`)) {
+        return PREVIEW_PROXY_API_BASE;
+      }
+      if (trimmed.includes("/proxy/3001")) return PREVIEW_PROXY_API_BASE;
+      return trimmed;
+    }
+
     const explicit = process.env.REACT_APP_API_BASE;
-    if (explicit && explicit.trim()) return explicit.trim().replace(/\/$/, "");
+    if (explicit && explicit.trim()) return normalizeBase(explicit);
 
     const host = window.location.hostname || "";
     const isPreviewDomain =
@@ -19,7 +32,7 @@ export function SettingsPage() {
       host.includes("vercel.app") ||
       host.includes("netlify.app");
 
-    return (isPreviewDomain ? "/proxy/3001" : "http://localhost:3001").replace(/\/$/, "");
+    return normalizeBase(isPreviewDomain ? PREVIEW_PROXY_API_BASE : "http://localhost:3001");
   })();
 
   return (

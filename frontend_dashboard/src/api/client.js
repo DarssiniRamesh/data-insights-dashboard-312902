@@ -21,7 +21,33 @@ const PREVIEW_PROXY_API_BASE = "/proxy/3001";
  */
 function getApiBase() {
   const explicit = process.env.REACT_APP_API_BASE;
-  if (explicit && explicit.trim()) return explicit.trim().replace(/\/$/, "");
+
+  /**
+   * Normalize a configured base value.
+   *
+   * Key goal: if the base is meant to use the preview proxy, ensure it is a *same-origin path*
+   * like "/proxy/3001" (NOT "https://host:3000/proxy/3001" which produces incorrect URLs).
+   */
+  function normalizeBase(raw) {
+    if (!raw) return "";
+    const trimmed = String(raw).trim().replace(/\/$/, "");
+    if (!trimmed) return "";
+
+    // If user supplied a proxy path, keep it path-only.
+    if (trimmed === PREVIEW_PROXY_API_BASE || trimmed.startsWith(`${PREVIEW_PROXY_API_BASE}/`)) {
+      return PREVIEW_PROXY_API_BASE;
+    }
+
+    // Common misconfiguration observed in previews: full origin that includes :3000 and then /proxy/3001.
+    // Force this back to a same-origin proxy path.
+    if (trimmed.includes("/proxy/3001")) {
+      return PREVIEW_PROXY_API_BASE;
+    }
+
+    return trimmed;
+  }
+
+  if (explicit && explicit.trim()) return normalizeBase(explicit);
 
   // Preview domains typically run behind a reverse proxy that exposes backend ports
   // under /proxy/<port>. In that setup, calling :3001 directly fails.
