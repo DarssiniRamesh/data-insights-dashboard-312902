@@ -21,9 +21,9 @@ export function SettingsPage() {
           <div className="kv-v mono">{apiBase}</div>
         </div>
         <div className="help">
-          Configure using <code>REACT_APP_API_BASE</code>. In preview, the default is the same-origin
-          proxy path <code>/proxy/3001</code> (avoids direct <code>:3001</code> browser calls). In
-          local dev, the fallback is <code>http://localhost:3001</code>.
+          Configure using <code>REACT_APP_API_BASE</code>. Default is the same-origin platform ingress
+          path <code>/proxy/3001</code> (avoids direct <code>:3001</code> browser calls and does not
+          rely on CRA dev-server proxy middleware).
         </div>
       </div>
 

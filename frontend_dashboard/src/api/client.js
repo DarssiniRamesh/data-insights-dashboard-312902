@@ -14,8 +14,6 @@
  */
 const PREVIEW_PROXY_PATH = "/proxy/3001";
 
-const DEFAULT_DEV_API_BASE = "http://localhost:3001";
-
 /**
  * Normalize and resolve the API base URL.
  *
@@ -69,12 +67,9 @@ function resolveApiBase(explicitBase) {
   }
 
   // Default behavior:
-  // - Use preview proxy unless we're clearly on localhost (developer environment).
-  const host = window.location.hostname || "";
-  const isLocalhost = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
-  if (!isLocalhost) return PREVIEW_PROXY_PATH;
-
-  return DEFAULT_DEV_API_BASE;
+  // Always use the platform ingress path. This avoids relying on CRA dev-server proxying
+  // and avoids direct browser calls to ":3001" which are typically not reachable.
+  return PREVIEW_PROXY_PATH;
 }
 
 /**
