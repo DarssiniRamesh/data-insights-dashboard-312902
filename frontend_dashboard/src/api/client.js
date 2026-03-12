@@ -31,12 +31,14 @@ const PREVIEW_PROXY_PATH = "/proxy/3001";
  * Resolution rules (ordered):
  * 1) If REACT_APP_API_BASE is set:
  *    - If it is a relative path (e.g. "/proxy/3001"), return as-is (normalized).
- *    - If it points to port 3001 (e.g. "http://localhost:3001" or "https://x:3001"),
- *      rewrite it to same-origin "/proxy/3001" to avoid preview breakage.
- *    - Otherwise, honor it as a full explicit override (useful for non-preview deployments).
+ *    - Otherwise, honor it as a full explicit override (e.g. "http://localhost:3001").
  * 2) If not set:
- *    - In preview: use same-origin "/proxy/3001".
- *    - In local dev: use "http://localhost:3001".
+ *    - If the app is served from port 3000 (CRA dev server), default to direct backend origin:
+ *        "http://<hostname>:3001"
+ *      (because "/proxy/3001" is typically NOT routed by CRA dev server and will 404).
+ *    - Otherwise (served from a non-:3000 origin, e.g. deployed/preview), default to the
+ *      platform same-origin ingress path:
+ *        "/proxy/3001"
  */
 function resolveApiBase(explicitBase) {
   function stripTrailingSlash(raw) {
@@ -47,10 +49,10 @@ function resolveApiBase(explicitBase) {
     return typeof raw === "string" && raw.trim().startsWith("/");
   }
 
-  function pointsToBackendPort3001(raw) {
-    if (!raw) return false;
-    // Match ":3001" in an origin-like string; also matches ".../proxy/3001" but that is ok.
-    return /:3001(\/|$)/.test(String(raw));
+  function isServedFromCraDevServer() {
+    // CRA dev server is typically http://localhost:3000 (or 127.0.0.1:3000).
+    // When running there, "/proxy/3001" is not automatically routed unless explicitly configured.
+    return typeof window !== "undefined" && String(window.location.port) === "3000";
   }
 
   const normalizedExplicit = stripTrailingSlash(explicitBase);
@@ -59,16 +61,21 @@ function resolveApiBase(explicitBase) {
     // Allow same-origin overrides explicitly.
     if (isRelativeBase(normalizedExplicit)) return normalizedExplicit;
 
-    // If someone configured an explicit URL to :3001, prefer the preview-safe proxy.
-    // This prevents ECONNREFUSED from preview domains where :3001 is not accessible.
-    if (pointsToBackendPort3001(normalizedExplicit)) return PREVIEW_PROXY_PATH;
-
+    // Explicit env var should win in all other cases.
     return normalizedExplicit;
   }
 
   // Default behavior:
-  // Always use the platform ingress path. This avoids relying on CRA dev-server proxying
-  // and avoids direct browser calls to ":3001" which are typically not reachable.
+  // - On CRA dev server (:3000): use direct backend origin on :3001.
+  // - Everywhere else: use platform same-origin ingress (/proxy/3001).
+  if (isServedFromCraDevServer()) {
+    const host =
+      typeof window !== "undefined" && window.location.hostname
+        ? window.location.hostname
+        : "localhost";
+    return `http://${host}:3001`;
+  }
+
   return PREVIEW_PROXY_PATH;
 }
 
