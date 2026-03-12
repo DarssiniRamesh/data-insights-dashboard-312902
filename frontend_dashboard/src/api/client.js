@@ -1,59 +1,87 @@
 /**
  * Centralized fetch wrapper for the frontend dashboard.
  *
- * - Reads base URL from REACT_APP_API_BASE with a safe fallback.
+ * - Resolves API base URL (same-origin proxy by default in preview).
  * - Attaches Authorization: Bearer <token> when present.
  * - Normalizes error shapes (FastAPI ErrorResponse and HTTPValidationError).
  * - On 401, clears auth and redirects to /login.
  */
 
-const DEFAULT_API_BASE = "http://localhost:3001";
+/**
+ * Proxy path used by the preview environment to reach the backend container (port 3001).
+ * IMPORTANT: This is a same-origin path; it avoids direct http://host:3001 calls that
+ * are not reachable from the browser in preview.
+ */
 const PREVIEW_PROXY_PATH = "/proxy/3001";
 
+const DEFAULT_DEV_API_BASE = "http://localhost:3001";
+
 /**
- * Decide which API base URL to use.
+ * Normalize and resolve the API base URL.
  *
- * Rules:
- * 1) If REACT_APP_API_BASE is set, always honor it.
- * 2) In preview environments, use the proxy path without the dev port.
- * 3) Otherwise fall back to localhost:3001.
+ * Contract:
+ * - Inputs:
+ *   - explicitBase?: string (usually process.env.REACT_APP_API_BASE)
+ * - Output:
+ *   - string (no trailing slash)
+ * - Invariants:
+ *   - If the returned value is a path (starts with "/"), it is same-origin.
+ *   - Returned string never ends with "/".
+ * - Errors:
+ *   - None thrown; falls back deterministically.
+ *
+ * Resolution rules (ordered):
+ * 1) If REACT_APP_API_BASE is set:
+ *    - If it is a relative path (e.g. "/proxy/3001"), return as-is (normalized).
+ *    - If it points to port 3001 (e.g. "http://localhost:3001" or "https://x:3001"),
+ *      rewrite it to same-origin "/proxy/3001" to avoid preview breakage.
+ *    - Otherwise, honor it as a full explicit override (useful for non-preview deployments).
+ * 2) If not set:
+ *    - In preview: use same-origin "/proxy/3001".
+ *    - In local dev: use "http://localhost:3001".
+ */
+function resolveApiBase(explicitBase) {
+  function stripTrailingSlash(raw) {
+    return String(raw || "").trim().replace(/\/$/, "");
+  }
+
+  function isRelativeBase(raw) {
+    return typeof raw === "string" && raw.trim().startsWith("/");
+  }
+
+  function pointsToBackendPort3001(raw) {
+    if (!raw) return false;
+    // Match ":3001" in an origin-like string; also matches ".../proxy/3001" but that is ok.
+    return /:3001(\/|$)/.test(String(raw));
+  }
+
+  const normalizedExplicit = stripTrailingSlash(explicitBase);
+
+  if (normalizedExplicit) {
+    // Allow same-origin overrides explicitly.
+    if (isRelativeBase(normalizedExplicit)) return normalizedExplicit;
+
+    // If someone configured an explicit URL to :3001, prefer the preview-safe proxy.
+    // This prevents ECONNREFUSED from preview domains where :3001 is not accessible.
+    if (pointsToBackendPort3001(normalizedExplicit)) return PREVIEW_PROXY_PATH;
+
+    return normalizedExplicit;
+  }
+
+  // Default behavior:
+  // - Use preview proxy unless we're clearly on localhost (developer environment).
+  const host = window.location.hostname || "";
+  const isLocalhost = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  if (!isLocalhost) return PREVIEW_PROXY_PATH;
+
+  return DEFAULT_DEV_API_BASE;
+}
+
+/**
+ * Decide which API base URL to use (single canonical entrypoint).
  */
 function getApiBase() {
-  const explicit = process.env.REACT_APP_API_BASE;
-
-  function normalizeBase(raw) {
-    if (!raw) return "";
-    const trimmed = String(raw).trim().replace(/\/$/, "");
-
-    if (!trimmed) return "";
-
-    // If someone passed a proxy path
-    if (trimmed.includes("/proxy/3001")) {
-      return `${window.location.origin.replace(/:\d+$/, "")}${PREVIEW_PROXY_PATH}`;
-    }
-
-    return trimmed;
-  }
-
-  if (explicit && explicit.trim()) {
-    return normalizeBase(explicit);
-  }
-
-  const host = window.location.hostname || "";
-
-  const isPreviewDomain =
-    host.includes("preview") ||
-    host.includes("kavia") ||
-    host.includes("kavia.ai") ||
-    host.includes("onrender.com") ||
-    host.includes("vercel.app") ||
-    host.includes("netlify.app");
-
-  if (isPreviewDomain) {
-    return `${window.location.origin.replace(/:\d+$/, "")}${PREVIEW_PROXY_PATH}`;
-  }
-
-  return DEFAULT_API_BASE;
+  return resolveApiBase(process.env.REACT_APP_API_BASE);
 }
 
 function safeJsonParse(text) {
@@ -94,6 +122,21 @@ function clearAuthAndRedirect() {
   if (window.location.pathname !== "/login") {
     window.location.assign("/login");
   }
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Diagnostic helper to expose the currently resolved API base used by apiRequest().
+ *
+ * Contract:
+ * - Inputs: none
+ * - Output: string (same as internal getApiBase() result)
+ * - Errors: none thrown
+ * - Side effects: none
+ */
+export function getResolvedApiBaseForDiagnostics() {
+  /** Returns the resolved API base currently used by the API client. */
+  return getApiBase();
 }
 
 // PUBLIC_INTERFACE

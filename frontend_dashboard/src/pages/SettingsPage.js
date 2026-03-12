@@ -1,39 +1,13 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
+import { getResolvedApiBaseForDiagnostics } from "../api/client";
 
 // PUBLIC_INTERFACE
 export function SettingsPage() {
   /** Settings and diagnostics page. */
   const { profile } = useAuth();
 
-  const apiBase = (() => {
-    const PREVIEW_PROXY_API_BASE = "/proxy/3001";
-
-    function normalizeBase(raw) {
-      if (!raw) return "";
-      const trimmed = String(raw).trim().replace(/\/$/, "");
-      if (!trimmed) return "";
-      if (trimmed === PREVIEW_PROXY_API_BASE || trimmed.startsWith(`${PREVIEW_PROXY_API_BASE}/`)) {
-        return PREVIEW_PROXY_API_BASE;
-      }
-      if (trimmed.includes("/proxy/3001")) return PREVIEW_PROXY_API_BASE;
-      return trimmed;
-    }
-
-    const explicit = process.env.REACT_APP_API_BASE;
-    if (explicit && explicit.trim()) return normalizeBase(explicit);
-
-    const host = window.location.hostname || "";
-    const isPreviewDomain =
-      host.includes("preview") ||
-      host.includes("kavia") ||
-      host.includes("kavia.ai") ||
-      host.includes("onrender.com") ||
-      host.includes("vercel.app") ||
-      host.includes("netlify.app");
-
-    return normalizeBase(isPreviewDomain ? PREVIEW_PROXY_API_BASE : "http://localhost:3001");
-  })();
+  const apiBase = getResolvedApiBaseForDiagnostics();
 
   return (
     <div>
@@ -47,8 +21,9 @@ export function SettingsPage() {
           <div className="kv-v mono">{apiBase}</div>
         </div>
         <div className="help">
-          Configure using <code>REACT_APP_API_BASE</code>. Default fallback is{" "}
-          <code>http://localhost:3001</code>.
+          Configure using <code>REACT_APP_API_BASE</code>. In preview, the default is the same-origin
+          proxy path <code>/proxy/3001</code> (avoids direct <code>:3001</code> browser calls). In
+          local dev, the fallback is <code>http://localhost:3001</code>.
         </div>
       </div>
 
